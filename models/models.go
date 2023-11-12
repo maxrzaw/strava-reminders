@@ -11,19 +11,33 @@ import (
 )
 
 var DB *gorm.DB
-var Hc_uuid uuid.UUID
 
-type HealthCheck struct {
+type Healthz struct {
 	Id        int `gorm:"primary_key"`
 	UUID      uuid.UUID
 	UpdatedAt time.Time `gorm:"autoUpdateTime:true"`
 }
 
+func (Healthz) TableName() string {
+	return "healthz"
+}
+
+type User struct {
+	gorm.Model
+	Username  string
+	Password  EncryptedString
+	Athlete   Athlete
+	CreatedAt time.Time `gorm:"autoCreateTime:true"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime:true"`
+}
+
 type Athlete struct {
-	Id           int `gorm:"primary_key"`
-	Username     string
+	gorm.Model
+	UserID       uint
+	StravaId     int `gorm:"unique"`
 	AccessToken  EncryptedString
 	RefreshToken EncryptedString
+	CreatedAt    time.Time `gorm:"autoCreateTime:true"`
 	UpdatedAt    time.Time `gorm:"autoUpdateTime:true"`
 }
 
@@ -45,9 +59,7 @@ func InitDb() {
 		panic("failed to connect database")
 	}
 
-	DB.Migrator().AutoMigrate(&HealthCheck{})
-	Hc_uuid = uuid.New()
-	hcm := HealthCheck{UUID: Hc_uuid}
-	DB.Create(&hcm)
+	DB.Migrator().AutoMigrate(&Healthz{})
+	DB.Migrator().AutoMigrate(&User{})
 	DB.Migrator().AutoMigrate(&Athlete{})
 }
