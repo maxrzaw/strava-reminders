@@ -38,7 +38,7 @@ func main() {
 		},
 	)
 
-	handlers.AddHandlers(e)
+	handlers.AddRoutes(e)
 
 	e.Logger.Fatal(e.Start(":8080"))
 }

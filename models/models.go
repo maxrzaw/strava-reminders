@@ -24,7 +24,8 @@ func (Healthz) TableName() string {
 
 type User struct {
 	gorm.Model
-	Username  string
+	Username  string `gorm:"unique"`
+	Email     string `gorm:"unique"`
 	Password  EncryptedString
 	Athlete   Athlete
 	CreatedAt time.Time `gorm:"autoCreateTime:true"`
@@ -33,8 +34,8 @@ type User struct {
 
 type Athlete struct {
 	gorm.Model
-	UserID       uint
-	StravaId     int `gorm:"unique"`
+	UserID       uint `gorm:"unique"`
+	StravaId     int  `gorm:"unique"`
 	AccessToken  EncryptedString
 	RefreshToken EncryptedString
 	CreatedAt    time.Time `gorm:"autoCreateTime:true"`
