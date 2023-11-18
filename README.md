@@ -1,6 +1,7 @@
 # Strava Reminders
 
 This app aims to support sending push notifications based on two scenarios:
+
 1. An activity is uploaded and the gear is not set after a time limit.
 2. An activity is uploaded and the gear is still primary after a time limit.
 

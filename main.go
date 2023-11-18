@@ -36,6 +36,16 @@ func main() {
 			Base:  "base.html",
 			Paths: []string{"public/index.html", "public/base.html"},
 		},
+		template.TemplateRecipe{
+			Name:  "signup.html",
+			Base:  "base.html",
+			Paths: []string{"public/signup.html", "public/base.html"},
+		},
+		template.TemplateRecipe{
+			Name:  "login.html",
+			Base:  "base.html",
+			Paths: []string{"public/login.html", "public/base.html"},
+		},
 	)
 
 	handlers.AddRoutes(e)

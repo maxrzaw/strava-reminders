@@ -1,4 +1,4 @@
-package api
+package html
 
 import (
 	"errors"
@@ -19,26 +19,28 @@ var GENERIC_USER_PASS_ERROR = map[string]string{"message": "Username or password
 var STRAVA_REMINDERS_JWT_KEY = "STRAVA_REMINDERS_JWT"
 var JWT_SECRET_KEY = []byte(os.Getenv("JWT_SECRET"))
 
-func Signup(c echo.Context) error {
+func SignupForm(c echo.Context) error {
 	username := c.FormValue("username")
 	email := c.FormValue("email")
 	password := c.FormValue("password")
 
 	if username == "" || email == "" || password == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{
+		return c.Render(http.StatusOK, "signup.html", map[string]string{
 			"message": "Username, email and password are required",
 		})
 	}
 
 	if err := checkPasswordRequirements(password); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
+		return c.Render(http.StatusOK, "signup.html", map[string]string{
 			"message": err.Error(),
 		})
 	}
 
 	hashed_password, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, err)
+		return c.Render(http.StatusOK, "signup.html", map[string]string{
+			"message": "Something went wrong",
+		})
 	}
 
 	user := models.User{
@@ -50,30 +52,34 @@ func Signup(c echo.Context) error {
 	result := models.DB.Create(&user)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrDuplicatedKey) {
-			return c.JSON(http.StatusBadRequest, map[string]string{
+			return c.Render(http.StatusOK, "signup.html", map[string]string{
 				"message": "Username or email already exists",
 			})
 		}
-		return c.JSON(http.StatusInternalServerError, result.Error)
+		return c.Render(http.StatusOK, "signup.html", map[string]string{
+			"message": "Something went wrong",
+		})
 	}
 
 	token, err := generateJWT(user)
 	if err != nil {
-		return echo.ErrInternalServerError
+		return c.Render(http.StatusOK, "signup.html", map[string]string{
+			"message": "Something went wrong",
+		})
 	}
 
 	cookie := createCookie(token)
 	c.SetCookie(cookie)
 
-	return c.JSON(http.StatusOK, map[string]string{})
+	return c.Redirect(http.StatusFound, "/")
 }
 
-func Login(c echo.Context) error {
+func LoginForm(c echo.Context) error {
 	username := c.FormValue("username")
 	password := c.FormValue("password")
 
 	if username == "" || password == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{
+		return c.Render(http.StatusOK, "login.html", map[string]string{
 			"message": "Username and password are required",
 		})
 	}
@@ -83,23 +89,28 @@ func Login(c echo.Context) error {
 
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return c.JSON(http.StatusUnauthorized, GENERIC_USER_PASS_ERROR)
+			return c.Render(http.StatusOK, "login.html", GENERIC_USER_PASS_ERROR)
 		}
-		return echo.ErrInternalServerError
+		return c.Render(http.StatusOK, "login.html", map[string]string{
+			"message": "Something went wrong",
+		})
 	}
 
 	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
-		return c.JSON(http.StatusUnauthorized, GENERIC_USER_PASS_ERROR)
+		return c.Render(http.StatusOK, "login.html", GENERIC_USER_PASS_ERROR)
 	}
 
 	token, err := generateJWT(user)
 	if err != nil {
-		return echo.ErrInternalServerError
+		return c.Render(http.StatusOK, "login.html", map[string]string{
+			"message": "Something went wrong",
+		})
 	}
 
 	cookie := createCookie(token)
 	c.SetCookie(cookie)
+	c.Response().Header().Set("HX-Location", "/")
 
 	return c.JSON(http.StatusOK, map[string]string{})
 }
@@ -114,7 +125,7 @@ func Logout(c echo.Context) error {
 	}
 	c.SetCookie(cookie)
 
-	return c.JSON(http.StatusOK, map[string]string{})
+	return c.Render(http.StatusOK, "login.html", map[string]string{})
 }
 
 func Validate(c echo.Context) error {
