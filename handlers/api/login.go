@@ -175,6 +175,6 @@ func createCookie(token string) *http.Cookie {
 	cookie.Expires = time.Now().Add(time.Hour * 24 * 30)
 	cookie.HttpOnly = true
 	cookie.Secure = false
-	cookie.SameSite = http.SameSiteStrictMode
+	cookie.SameSite = http.SameSiteLaxMode
 	return cookie
 }
