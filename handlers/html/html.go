@@ -1,22 +1,17 @@
 package html
 
 import (
-	"fmt"
 	"net/http"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
+	"github.com/maxrzaw/strava-reminders/middleware"
 )
 
 func Index(c echo.Context) error {
-	user, ok := c.Get("user").(*jwt.Token)
-	if !ok {
-		fmt.Println("redirecting to strava from index")
-		return c.Redirect(http.StatusFound, "/login")
-	}
-	claims := user.Claims.(*jwt.RegisteredClaims)
+	athleteContext := c.(*middleware.AthleteContext)
+	athlete := athleteContext.Athlete
 	return c.Render(http.StatusOK, "index.html", map[string]string{
-		"subject": claims.Subject,
+		"name": athlete.Name,
 	})
 }
 

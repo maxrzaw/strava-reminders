@@ -1,7 +1,7 @@
 {{ define "title" }}Strava Reminders{{ end }}
 {{ define "body" }}
   <h1>Strava Reminders!</h1>
-  {{ if .subject }}
-    <p>Hi User {{ .subject }}</p>
+  {{ if .name }}
+    <p>Hi {{ .name }}</p>
   {{ end }}
 {{ end }}

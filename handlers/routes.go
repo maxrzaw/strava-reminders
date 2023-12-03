@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"os"
 	"strings"
 
@@ -32,26 +31,9 @@ func authSkipper(c echo.Context) bool {
 }
 
 func AddRoutes(e *echo.Echo) {
+	// Set up Goth
 	gothic.Store = sessions.NewCookieStore([]byte(os.Getenv("JWT_SECRET")))
 	goth.UseProviders(strava.New(os.Getenv("STRAVA_CLIENT_ID"), os.Getenv("STRAVA_CLIENT_SECRET"), "http://localhost:8080/auth/callback?provider=strava"))
-	e.GET("/auth", func(c echo.Context) error {
-		gothic.BeginAuthHandler(c.Response(), c.Request())
-		return nil
-	})
-
-	e.GET("/auth/callback", func(c echo.Context) error {
-		user, err := gothic.CompleteUserAuth(c.Response(), c.Request())
-		if err != nil {
-			return err
-		}
-
-		return api.Login(c, user)
-	})
-
-	e.GET("/auth/logout", func(c echo.Context) error {
-		gothic.Logout(c.Response(), c.Request())
-		return apihandlers.Logout(c)
-	})
 
 	// Must come before the JWT middleware
 	e.Use(middleware.MissingCookieRedirectWithConfig(middleware.MissingCookieMiddlewareConfig{
@@ -75,6 +57,32 @@ func AddRoutes(e *echo.Echo) {
 		JWTLookup:   "user",
 		RedirectURL: "/login",
 	}))
+	// The Athlete Context Middleware should come last
+	e.Use(middleware.AthleteContextMiddlewareWithConfig(middleware.AthleteContextMiddlewareConfig{
+		JWTLookup: "user",
+	}))
+
+	// Add Auth Routes
+	e.GET("/auth", func(c echo.Context) error {
+		gothic.BeginAuthHandler(c.Response(), c.Request())
+		return nil
+	})
+
+	e.GET("/auth/callback", func(c echo.Context) error {
+		user, err := gothic.CompleteUserAuth(c.Response(), c.Request())
+		if err != nil {
+			return err
+		}
+
+		return api.Login(c, user)
+	})
+
+	e.GET("/auth/logout", func(c echo.Context) error {
+		gothic.Logout(c.Response(), c.Request())
+		return apihandlers.Logout(c)
+	})
+
+	// Add the Routes
 	e.GET("/", html.Index)
 	e.GET("/login", html.Login)
 
