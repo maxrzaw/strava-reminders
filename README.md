@@ -9,8 +9,9 @@ Can specify per activity configuration for time limit and notification scenarios
 
 ## TODO
 
+- Subscribe to webhooks from the strava api
+- I'll probably need to do something with the refresh token
 - Business logic in the server
-- Linking a user to their Strava account and saving the tokens to the database
 - Authorization for content specific to the logged in user
   - Hopefully I can do this with middleware
 - Lightweight notification solution
@@ -21,8 +22,7 @@ Can specify per activity configuration for time limit and notification scenarios
 
 ## DONE
 
-- Authentication and Authorization of some sort A user can only look at their stuff, not others
+- Linking a user to their Strava account and saving the tokens to the database
+- Authentication and Authorization of some sort. A user can only look at their stuff, not others
   - Can I piggyback off of Strava?
-    - I don't think so :(
-    - Can probably use a JWT token in a cookie and write and validate it using go middleware
-    - This [Reddit post](https://www.reddit.com/r/htmx/comments/11jwxeq/authentication_for_htmx_app/) has some info
+    - Yes!
