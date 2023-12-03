@@ -1,6 +1,7 @@
 package html
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -10,6 +11,7 @@ import (
 func Index(c echo.Context) error {
 	user, ok := c.Get("user").(*jwt.Token)
 	if !ok {
+		fmt.Println("redirecting to strava from index")
 		return c.Redirect(http.StatusFound, "/login")
 	}
 	claims := user.Claims.(*jwt.RegisteredClaims)
@@ -17,9 +19,7 @@ func Index(c echo.Context) error {
 		"subject": claims.Subject,
 	})
 }
-func LoginPage(c echo.Context) error {
-	return c.Render(http.StatusOK, "login.html", nil)
-}
-func SignupPage(c echo.Context) error {
-	return c.Render(http.StatusOK, "signup.html", nil)
+
+func Login(c echo.Context) error {
+	return c.Render(http.StatusOK, "login.html", map[string]string{})
 }

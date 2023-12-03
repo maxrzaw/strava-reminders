@@ -81,11 +81,6 @@ func EncryptAES(key []byte, plaintext string) string {
 
 	mode := cipher.NewCBCEncrypter(block, iv)
 	mode.CryptBlocks(ciphertext[blockSize:], paddedPlaintext)
-	// encrypt
-
-	fmt.Println("Padded: " + string(paddedPlaintext))
-	fmt.Println("encrypted: " + string(ciphertext))
-	// return hex string
 	return hex.EncodeToString(ciphertext)
 }
 

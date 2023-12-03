@@ -22,22 +22,14 @@ func (Healthz) TableName() string {
 	return "healthz"
 }
 
-type User struct {
-	gorm.Model
-	Username  string `gorm:"unique"`
-	Email     string `gorm:"unique"`
-	Password  EncryptedString
-	Athlete   Athlete
-	CreatedAt time.Time `gorm:"autoCreateTime:true"`
-	UpdatedAt time.Time `gorm:"autoUpdateTime:true"`
-}
-
 type Athlete struct {
 	gorm.Model
-	UserID       uint `gorm:"unique"`
-	StravaId     int  `gorm:"unique"`
+	Name         string
+	NickName     string
+	StravaUserID uint64 `gorm:"unique"`
 	AccessToken  EncryptedString
 	RefreshToken EncryptedString
+	ExpiresAt    time.Time
 	CreatedAt    time.Time `gorm:"autoCreateTime:true"`
 	UpdatedAt    time.Time `gorm:"autoUpdateTime:true"`
 }
@@ -61,6 +53,5 @@ func InitDb() {
 	}
 
 	DB.Migrator().AutoMigrate(&Healthz{})
-	DB.Migrator().AutoMigrate(&User{})
 	DB.Migrator().AutoMigrate(&Athlete{})
 }

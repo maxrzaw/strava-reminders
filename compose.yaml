@@ -39,6 +39,9 @@ services:
     depends_on:
       pg:
         condition: service_healthy
+    environment:
+      ADMINER_DESIGN: "lucas-sandery"
+      ADMINER_DEFAULT_SERVER: pg
     restart: always
     ports:
       - "9000:8080"

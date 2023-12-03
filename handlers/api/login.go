@@ -5,116 +5,52 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
-	"unicode"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
+	"github.com/markbates/goth"
 	"github.com/maxrzaw/strava-reminders/models"
-	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
-var GENERIC_USER_PASS_ERROR = map[string]string{"message": "Username or password is incorrect"}
 var STRAVA_REMINDERS_JWT_KEY = "STRAVA_REMINDERS_JWT"
 var JWT_SECRET_KEY = []byte(os.Getenv("JWT_SECRET"))
 
-func Signup(c echo.Context) error {
-	username := c.FormValue("username")
-	email := c.FormValue("email")
-	password := c.FormValue("password")
-
-	if username == "" || email == "" || password == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": "Username, email and password are required",
-		})
-	}
-
-	if err := checkPasswordRequirements(password); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": err.Error(),
-		})
-	}
-
-	hashed_password, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+func Login(c echo.Context, user goth.User) error {
+	userId, err := strconv.ParseUint(user.UserID, 10, 64)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, err)
+		panic(err)
 	}
-
-	user := models.User{
-		Username: username,
-		Email:    email,
-		Password: models.EncryptedString(hashed_password),
-	}
-
-	result := models.DB.Create(&user)
-	if result.Error != nil {
-		if errors.Is(result.Error, gorm.ErrDuplicatedKey) {
-			return c.JSON(http.StatusBadRequest, map[string]string{
-				"message": "Username or email already exists",
-			})
-		}
-		return c.JSON(http.StatusInternalServerError, result.Error)
-	}
-
-	token, err := generateJWT(user)
-	if err != nil {
-		return echo.ErrInternalServerError
-	}
-
-	cookie := createCookie(token)
-	c.SetCookie(cookie)
-
-	return c.JSON(http.StatusOK, map[string]string{})
-}
-
-func Login(c echo.Context) error {
-	username := c.FormValue("username")
-	password := c.FormValue("password")
-
-	if username == "" || password == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"message": "Username and password are required",
-		})
-	}
-
-	var user models.User
-	result := models.DB.Where("username = ?", username).First(&user)
+	var athlete models.Athlete
+	result := models.DB.Where("strava_user_id = ?", userId).First(&athlete)
 
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return c.JSON(http.StatusUnauthorized, GENERIC_USER_PASS_ERROR)
+			a := &models.Athlete{
+				Name:         user.Name,
+				NickName:     user.NickName,
+				StravaUserID: userId,
+				AccessToken:  models.EncryptedString(user.AccessToken),
+				RefreshToken: models.EncryptedString(user.RefreshToken),
+				ExpiresAt:    user.ExpiresAt,
+			}
+
+			models.DB.Create(&a)
+			athlete = *a
 		}
-		return echo.ErrInternalServerError
 	}
 
-	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	token, err := generateJWT(athlete)
 	if err != nil {
-		return c.JSON(http.StatusUnauthorized, GENERIC_USER_PASS_ERROR)
-	}
-
-	token, err := generateJWT(user)
-	if err != nil {
-		return echo.ErrInternalServerError
+		panic(err.Error())
 	}
 
 	cookie := createCookie(token)
 	c.SetCookie(cookie)
 
-	return c.JSON(http.StatusOK, map[string]string{})
-}
-
-func Logout(c echo.Context) error {
-	cookie := &http.Cookie{
-		Name:     STRAVA_REMINDERS_JWT_KEY,
-		Value:    "",
-		HttpOnly: true,
-		Secure:   false,
-		MaxAge:   -1,
-	}
-	c.SetCookie(cookie)
-
-	return c.JSON(http.StatusOK, map[string]string{})
+	return c.Redirect(301, "/")
 }
 
 func Validate(c echo.Context) error {
@@ -126,36 +62,23 @@ func Validate(c echo.Context) error {
 	})
 }
 
-func checkPasswordRequirements(password string) error {
-	if len(password) < 8 {
-		return errors.New("Password must be at least 8 characters long")
+func Logout(c echo.Context) error {
+	cookie := &http.Cookie{
+		Name:     STRAVA_REMINDERS_JWT_KEY,
+		Path:     "/",
+		Value:    "",
+		HttpOnly: true,
+		Secure:   false,
+		MaxAge:   -1,
 	}
+	c.SetCookie(cookie)
 
-	has_upper := false
-	has_special := false
-	for _, c := range password {
-		if unicode.IsPunct(c) || unicode.IsSymbol(c) {
-			has_special = true
-		}
-		if unicode.IsUpper(c) {
-			has_upper = true
-		}
-		if has_upper && has_special {
-			break
-		}
-	}
-	if !has_upper {
-		return errors.New("Password must contain at least one uppercase letter")
-	}
-	if !has_special {
-		return errors.New("Password must contain at least one special character")
-	}
-	return nil
+	return c.Redirect(301, "/login")
 }
 
-func generateJWT(user models.User) (string, error) {
+func generateJWT(athlete models.Athlete) (string, error) {
 	claims := jwt.RegisteredClaims{
-		Subject:   fmt.Sprint(user.ID),
+		Subject:   fmt.Sprint(athlete.ID),
 		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24 * 30)),
 		IssuedAt:  jwt.NewNumericDate(time.Now()),
 	}
@@ -176,5 +99,6 @@ func createCookie(token string) *http.Cookie {
 	cookie.HttpOnly = true
 	cookie.Secure = false
 	cookie.SameSite = http.SameSiteLaxMode
+	cookie.Path = "/"
 	return cookie
 }

@@ -1,18 +1,25 @@
 package handlers
 
 import (
+	"fmt"
+	"os"
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/gorilla/sessions"
 	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
+	"github.com/markbates/goth"
+	"github.com/markbates/goth/gothic"
+	"github.com/markbates/goth/providers/strava"
+	"github.com/maxrzaw/strava-reminders/handlers/api"
 	apihandlers "github.com/maxrzaw/strava-reminders/handlers/api"
 	html "github.com/maxrzaw/strava-reminders/handlers/html"
 	middleware "github.com/maxrzaw/strava-reminders/middleware"
 )
 
 func authSkipper(c echo.Context) bool {
-	if strings.Contains(c.Request().URL.Path, "login") || strings.Contains(c.Request().URL.Path, "signup") {
+	if strings.Contains(c.Request().URL.Path, "auth") || strings.Contains(c.Request().URL.Path, "login") {
 		return true
 	}
 	if c.Request().URL.Path == "/api/healtz" {
@@ -25,11 +32,32 @@ func authSkipper(c echo.Context) bool {
 }
 
 func AddRoutes(e *echo.Echo) {
+	gothic.Store = sessions.NewCookieStore([]byte(os.Getenv("JWT_SECRET")))
+	goth.UseProviders(strava.New(os.Getenv("STRAVA_CLIENT_ID"), os.Getenv("STRAVA_CLIENT_SECRET"), "http://localhost:8080/auth/callback?provider=strava"))
+	e.GET("/auth", func(c echo.Context) error {
+		gothic.BeginAuthHandler(c.Response(), c.Request())
+		return nil
+	})
+
+	e.GET("/auth/callback", func(c echo.Context) error {
+		user, err := gothic.CompleteUserAuth(c.Response(), c.Request())
+		if err != nil {
+			return err
+		}
+
+		return api.Login(c, user)
+	})
+
+	e.GET("/auth/logout", func(c echo.Context) error {
+		gothic.Logout(c.Response(), c.Request())
+		return apihandlers.Logout(c)
+	})
+
 	// Must come before the JWT middleware
 	e.Use(middleware.MissingCookieRedirectWithConfig(middleware.MissingCookieMiddlewareConfig{
 		Skipper:     authSkipper,
 		TokenLookup: apihandlers.STRAVA_REMINDERS_JWT_KEY,
-		RedirectURL: "/login",
+		RedirectURL: "/auth?provider=strava",
 	}))
 
 	e.Use(echojwt.WithConfig(echojwt.Config{
@@ -48,14 +76,9 @@ func AddRoutes(e *echo.Echo) {
 		RedirectURL: "/login",
 	}))
 	e.GET("/", html.Index)
-	e.GET("/login", html.LoginPage)
-	e.POST("/login-form", html.LoginForm)
-	e.GET("/signup", html.SignupPage)
-	e.POST("/signup-form", html.SignupForm)
+	e.GET("/login", html.Login)
 
 	api := e.Group("/api")
-	api.POST("/signup", apihandlers.Signup)
-	api.POST("/login", apihandlers.Login)
 	api.GET("/healthz", apihandlers.Healthz)
 	api.GET("/validate", apihandlers.Validate)
 }

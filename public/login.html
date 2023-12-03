@@ -2,46 +2,17 @@
 {{ define "body" }}
   <div id="login-page" class="flex h-screen items-center justify-center bg-gray-100">
     <div class="mx-auto w-full max-w-md rounded-md bg-white p-8 shadow-md">
-      <h2 class="mb-6 text-2xl font-semibold">Login</h2>
-      <form hx-post="/login-form" hx-swap="outerHTML" hx-target="#login-page" class="mb-4">
-        <div class="mb-4">
-          <label for="username" class="block text-sm font-medium text-gray-600">Username</label>
-          <input
-            type="text"
-            id="username"
-            name="username"
-            class="mt-1 w-full rounded-md border p-2"
-          />
-        </div>
-        <div class="mb-6">
-          <label for="password" class="block text-sm font-medium text-gray-600">Password</label>
-          <input
-            type="password"
-            id="password"
-            name="password"
-            class="mt-1 w-full rounded-md border p-2"
-          />
-        </div>
-        {{ if .message }}
-          <div class="mb-4">
-            <div class="text-red-500" id="error-message">{{ .message }}</div>
-          </div>
-        {{ end }}
-        <button
-          type="submit"
-          class="w-full rounded-md bg-blue-500 p-2 text-white hover:bg-blue-600"
-        >
-          Login
-        </button>
-      </form>
-      <form action="/signup">
-        <button
-          type="submit"
-          class="w-full rounded-md bg-green-500 p-2 text-white hover:bg-green-600"
-        >
-          Sign Up
-        </button>
-      </form>
+      <h2 class="mb-6 text-2xl font-semibold">Login Using Strava</h2>
+      <p class="mb-6">
+        To use Strava Reminders, you must log in with your Strava Account. This app will only have
+        read access to your Strava account and will not be able to upload or modify activities.
+      </p>
+      <button
+        onclick="window.location.href='/auth?provider=strava';"
+        class="w-full rounded-md bg-green-500 p-2 text-white hover:bg-green-600"
+      >
+        Login
+      </button>
     </div>
   </div>
 {{ end }}

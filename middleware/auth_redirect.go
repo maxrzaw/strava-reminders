@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -34,6 +35,7 @@ func MissingCookieRedirectWithConfig(config MissingCookieMiddlewareConfig) echo.
 			}
 			_, err := c.Cookie(config.TokenLookup)
 			if err != nil {
+				fmt.Printf("redirecting from %s due to missing cookie", c.Request().URL.RequestURI())
 				return c.Redirect(http.StatusFound, config.RedirectURL)
 			}
 
@@ -53,8 +55,6 @@ func ExpiredJWTMiddlewareRedirectWithConfig(config ExpiredJWTMiddlewareConfig) e
 		return func(c echo.Context) error {
 			if config.Skipper != nil && config.Skipper(c) {
 				return next(c)
-			} else {
-				// print the path
 			}
 			// we can use echo to get the claims. This middleware must come after the JWT middleware
 			tok := c.Get(config.JWTLookup)
