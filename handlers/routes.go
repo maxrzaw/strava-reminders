@@ -39,7 +39,7 @@ func AddRoutes(e *echo.Echo) {
 	e.Use(middleware.MissingCookieRedirectWithConfig(middleware.MissingCookieMiddlewareConfig{
 		Skipper:     authSkipper,
 		TokenLookup: apihandlers.STRAVA_REMINDERS_JWT_KEY,
-		RedirectURL: "/auth?provider=strava",
+		RedirectURL: "/login",
 	}))
 
 	e.Use(echojwt.WithConfig(echojwt.Config{
@@ -55,7 +55,7 @@ func AddRoutes(e *echo.Echo) {
 	e.Use(middleware.ExpiredJWTMiddlewareRedirectWithConfig(middleware.ExpiredJWTMiddlewareConfig{
 		Skipper:     authSkipper,
 		JWTLookup:   "user",
-		RedirectURL: "/login",
+		RedirectURL: "/auth?provider=strava",
 	}))
 	// The Athlete Context Middleware should come last
 	e.Use(middleware.AthleteContextMiddlewareWithConfig(middleware.AthleteContextMiddlewareConfig{
