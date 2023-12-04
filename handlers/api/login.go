@@ -31,6 +31,7 @@ func Login(c echo.Context, user goth.User) error {
 			a := &models.Athlete{
 				Name:         user.Name,
 				NickName:     user.NickName,
+				AvatarURL:    user.AvatarURL,
 				StravaUserID: userId,
 				AccessToken:  models.EncryptedString(user.AccessToken),
 				RefreshToken: models.EncryptedString(user.RefreshToken),
@@ -40,6 +41,15 @@ func Login(c echo.Context, user goth.User) error {
 			models.DB.Create(&a)
 			athlete = *a
 		}
+	} else {
+		athlete.Name = user.Name
+		athlete.NickName = user.NickName
+		athlete.AvatarURL = user.AvatarURL
+		athlete.StravaUserID = userId
+		athlete.AccessToken = models.EncryptedString(user.AccessToken)
+		athlete.RefreshToken = models.EncryptedString(user.RefreshToken)
+		athlete.ExpiresAt = user.ExpiresAt
+		models.DB.Save(&athlete)
 	}
 
 	token, err := generateJWT(athlete)

@@ -11,7 +11,8 @@ func Index(c echo.Context) error {
 	athleteContext := c.(*middleware.AthleteContext)
 	athlete := athleteContext.Athlete
 	return c.Render(http.StatusOK, "index.html", map[string]string{
-		"name": athlete.Name,
+		"name":      athlete.Name,
+		"avatarURL": athlete.AvatarURL,
 	})
 }
 

@@ -26,6 +26,7 @@ type Athlete struct {
 	gorm.Model
 	Name         string
 	NickName     string
+	AvatarURL    string
 	StravaUserID uint64 `gorm:"unique"`
 	AccessToken  EncryptedString
 	RefreshToken EncryptedString

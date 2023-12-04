@@ -4,4 +4,7 @@
   {{ if .name }}
     <p>Hi {{ .name }}</p>
   {{ end }}
+  {{ if .avatarURL }}
+    <img src="{{ .avatarURL }}" alt="Avatar URL" />
+  {{ end }}
 {{ end }}
